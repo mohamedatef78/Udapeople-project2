@@ -63,7 +63,7 @@ jobs:
           name: Build front-end
           command: |
             cd frontend
-             npm install npm@latest -g
+             npm install 
             # sudo npm i --save-dev standard-version
             # sudo npm i semver
             npm run build
@@ -82,7 +82,7 @@ jobs:
           name: Back-end build
           command: |
             cd backend
-            npm install npm@latest -g
+            npm install 
             # sudo npm i --save-dev standard-version
             # sudo npm i semver
             npm run build
@@ -101,7 +101,7 @@ jobs:
           name: Front-end Test
           command: |
             cd frontend
-            npm install npm@latest -g
+            npm install 
             # sudo npm i --save-dev standard-version
             # sudo npm install oauth-sign
             # sudo npm i semver
@@ -118,7 +118,7 @@ jobs:
           name: Back-end Test
           command: |
             cd backend
-            npm install npm@latest -g
+            npm install 
             # sudo npm i --save-dev standard-version
             # sudo npm i semver
             run test
