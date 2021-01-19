@@ -235,49 +235,29 @@ jobs:
 
   run-migrations:
     docker:
-      - image: circleci/node:13.8.0
+      - image: circleci/node:latest
+      # Docker image here that supports NodeJS
     steps:
       - checkout
-      - run:
-          name: awscli install
-          command: |
-            sudo apt-get -y -qq update
-            sudo apt-get -qq install awscli
-            sudo apt-get -y -qq install python3
+      - run: cd backend && npm install
       - run:
           name: Run migrations
+          no_output_timeout: 10m
           command: |
-            cd backend
-            npm install
-            npm run build
-            # npm audit fix --audit-level=critical --force
-            # echo "_________________ Step Ended ___________________"
-            touch migration.txt
-            npm run migrations >> migration.txt
-            cat migration.txt
-           
+            touch migrations.txt
+            cd backend 
+            npm run migrations > migrations.txt
+      - run: cat migrations.txt
       - run:
-          name: Send migration results to memstash
+          name: results values
           command: |
-            if grep -q "has been executed successfully." migration.txt
-            then
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
-            --request PUT \
-            --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID}
+            if grep "successfully" migrations.txt
+            then 
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "true" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID}
             else
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
-            --request PUT \
-            --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID}
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "false" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID}
             fi
-      - run:
-          name: LogOnFail
-          when: on_fail
-          command: |
-            cat /home/circleci/.npm/_logs/*-debug.log
-            ls -la
-            cat backend/migration.txt
-      - revert-migrations
-      - destroy-environment # Rollback on failure      
+      - destroy-environment      
      
   deploy-frontend:
     docker:
@@ -294,7 +274,7 @@ jobs:
           name: Get backend url
           command: |
             BACKEND_IP=$(curl -H "token: IP-${CIRCLE_WORKFLOW_ID:0:9}" \
-                        --request GET https://api.memstash.io/values/IP)
+            --request GET https://api.memstash.io/values/IP)
             export API_URL="http://${BACKEND_IP}:3030"
             echo API_URL="http://${BACKEND_IP}:3030" >> "frontend/.env"
             echo "${API_URL}"
@@ -397,7 +377,7 @@ jobs:
             echo STACKS: "$STACKS" 
             aws cloudformation deploy \
             --template-file /root/project/.circleci/files/cloudfront.yml \
-            --stack-name udapeople-cloudfront \
+            --stack-name udapeople-production \
             --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
             --tags project=udapeople
             curl -H "Content-Type: text/plain" -H "token: OldWorkflowID-${CIRCLE_WORKFLOW_ID}" \
